@@ -4,13 +4,22 @@ FROM node:24-alpine
 WORKDIR /app
 
 # Copy package files
-COPY package*.json ./
+COPY package.json package-lock.json ./
+COPY packages/shared/package.json packages/shared/
+COPY srcs/backend/package.json srcs/backend/
+COPY srcs/frontend/package.json srcs/frontend/
 
 # Install dependencies
-RUN npm install
+RUN npm ci
+
+# Shared is consumed as built output (needs rebuild when changed)
+COPY packages/shared packages/shared
+RUN npm run build -w @appointment-saas/shared
 
 # Copy source code
-COPY . .
+COPY srcs/frontend srcs/frontend
+
+WORKDIR /app/srcs/frontend
 
 # Expose port
 EXPOSE 3000

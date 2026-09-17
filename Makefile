@@ -1,28 +1,31 @@
 DOCKER_COMPOSE_FILE = srcs/docker-compose.yml
+COMPOSE = docker compose -f $(DOCKER_COMPOSE_FILE)
 
 all: build up
 
 build:
-	docker compose -f $(DOCKER_COMPOSE_FILE) build
+	$(COMPOSE) build
 
 up:
-	docker compose -f $(DOCKER_COMPOSE_FILE) up -d
+	$(COMPOSE) up -d
 
 down:
-	docker compose -f $(DOCKER_COMPOSE_FILE) down
+	$(COMPOSE) down
 
 start:
-	docker compose -f $(DOCKER_COMPOSE_FILE) start
+	$(COMPOSE) start
 
 stop:
-	docker compose -f $(DOCKER_COMPOSE_FILE) stop
+	$(COMPOSE) stop
 
-clean: down
-	docker system prune -af
+clean:
+	$(COMPOSE) down -v
 
-fclean: clean
-	docker volume prune -f
+fclean:
+	$(COMPOSE) down -v --rmi all
+
+rebuild: down build up
 
 re: fclean all
 
-.PHONY: all build up down start stop clean fclean re
+.PHONY: all build up down start stop clean fclean rebuild re

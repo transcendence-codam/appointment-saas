@@ -2,7 +2,13 @@
   "name": "appointment-saas",
   "private": true,
   "description": "Common package for formatting, linting, pre-commit hooks.",
+  "workspaces": [
+    "srcs/backend",
+    "srcs/frontend",
+    "packages/shared"
+  ],
   "scripts": {
+    "build:shared": "npm run build -w @appointment-saas/shared",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "format": "prettier --check .",
