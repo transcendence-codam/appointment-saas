@@ -151,10 +151,12 @@ Repo now is a single npm workspace `srcs/backend`, `srcs/frontend` and `packages
 - When changing `packages/shared` DO A REBUILD TO APPLY CHANGES!! (`make rebuild`). For backend and frontend there is hot reload so changes will apply automatically.
 - When adding/updating project dependencies do a rebuild: `make rebuild`
 - If you have a lot of warnings in editor run `npm run build:shared` and `npm install` from root (it's just for editor to pick types and imports)
+- after pulling code with changed dependencies run `npm install` on the root and `make rebuild` for containers to pick up dependency
 
 ```bash
-npm install                                        # install everything
+npm install                                        # install project-wide
 npm install <pkg> -w backend                       # add a backend dependency
 npm install <pkg> -w frontend                      # add a frontend dependency
 npm install <pkg> -w @appointment-saas/shared      # add dependency to shared (but this should not be neccessary)
+npm install -D <pkg>                               # add a DEV dependency
 ```
