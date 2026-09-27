@@ -77,16 +77,22 @@ To stop and remove the containers:
 make down
 ```
 
-To stop containers and prune unused Docker images/system data:
+Will remove containers, networks and volumes for this project (will drop database)
 
 ```bash
 make clean
 ```
 
-To stop and remove the containers, but also remove the named volumes
+All `clean` does and also removes this project's images
 
 ```bash
 make fclean
+```
+
+Rebuild for everyday development (keeps the database)
+
+```bash
+make rebuild
 ```
 
 For a full teardown followed by a full rebuild:
@@ -105,10 +111,10 @@ docker ps # Should show 3 containers currently running
 On the browser:
 
 ```text
-http://localhost:3001
+http://localhost:3001/api
 ```
 
-This should show "Hello World!" which means that the backend is running correctly.
+This should show "Hello World!" which means that the backend is running correctly. Every backend route lives under `/api`.
 
 ```text
 http://localhost:3000
@@ -132,4 +138,23 @@ When inside, you can run the following example commands:
 \dn # List schemas
 \h # Show help for SQL commands
 \q # Quit psql and return to your normal terminal
+```
+
+### The shared package (`packages/shared`)
+
+Repo now is a single npm workspace `srcs/backend`, `srcs/frontend` and `packages/shared` with one `package-lock.json` at the repo root.
+`@appointment-saas/shared` holds the types both sides import.
+
+**Important notes:**
+
+- only run `npm install` from the repository root, if runing it in srcs/backend or srcs/frontend it will create second lockfile and break setup.
+- When changing `packages/shared` DO A REBUILD TO APPLY CHANGES!! (`make rebuild`). For backend and frontend there is hot reload so changes will apply automatically.
+- When adding/updating project dependencies do a rebuild: `make rebuild`
+- If you have a lot of warnings in editor run `npm run build:shared` and `npm install` from root (it's just for editor to pick types and imports)
+
+```bash
+npm install                                        # install everything
+npm install <pkg> -w backend                       # add a backend dependency
+npm install <pkg> -w frontend                      # add a frontend dependency
+npm install <pkg> -w @appointment-saas/shared      # add dependency to shared (but this should not be neccessary)
 ```

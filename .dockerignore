@@ -1,0 +1,9 @@
+**/node_modules
+**/dist
+**/dist-ssr
+**/*.tsbuildinfo
+**/.env
+**/*.log
+.git
+.gitignore
+srcs/backend/src/generated

@@ -20,17 +20,20 @@ services:
 
   backend:
     build:
-      context: backend
+      context: ..
+      dockerfile: srcs/backend/Dockerfile
     image: nestjs
     container_name: nestjs
     restart: unless-stopped
     command: sh -c "npx prisma generate && npx prisma migrate deploy && npm run start:dev"
     volumes:
-      - ./backend:/app
+      - ./backend:/app/srcs/backend
       - /app/node_modules
+      - /app/srcs/backend/node_modules
     ports:
-      - "3001:3000"
+      - "3001:3001"
     environment:
+      PORT: 3001
       DATABASE_URL: postgres://${DATABASE_USER}:${DATABASE_PASSWORD}@${DATABASE_HOST}:${DATABASE_PORT}/${DATABASE_NAME}
     depends_on:
       postgres:
@@ -38,15 +41,17 @@ services:
 
   frontend:
     build:
-      context: frontend
+      context: ..
+      dockerfile: srcs/frontend/Dockerfile
     image: react
     container_name: react
     restart: unless-stopped
     volumes:
-      - ./frontend:/app
+      - ./frontend:/app/srcs/frontend
       - /app/node_modules
+      - /app/srcs/frontend/node_modules
     ports:
-      - "3000:5173"
+      - "3000:3000"
     environment:
       - CHOKIDAR_USEPOLLING=true
     depends_on:
@@ -54,5 +59,3 @@ services:
 
 volumes:
   postgres_data:
-  
-
