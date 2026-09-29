@@ -26,3 +26,6 @@ dist-ssr/
 
 # Prisma ORM
 **/src/generated/
+
+# tmp files
+tmp/

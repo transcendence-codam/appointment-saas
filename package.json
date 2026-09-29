@@ -12,9 +12,11 @@
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "format": "prettier --check .",
-    "format:fix": "prettier --write ."
+    "format:fix": "prettier --write .",
+    "prepare": "husky"
   },
   "devDependencies": {
+    "husky": "^9.1.7",
     "oxlint": "^1.82.0",
     "prettier": "^3.9.6"
   }
