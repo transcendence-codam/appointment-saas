@@ -18,3 +18,92 @@ model Test {
   name      String
   createdAt DateTime @default(now())
 }
+
+
+// models for users and tenants (jan)
+model User {
+  id           String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  name         String
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  memberships Membership[]
+
+  @@map("users")
+}
+
+model Tenant {
+  id        String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  name      String
+  slug      String   @unique
+  address   String?
+  phone     String?
+  logoUrl   String?  @map("logo_url")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  memberships Membership[]
+  invites Invite[]
+
+  settings TenantSettings?
+
+  @@map("tenants")
+}
+
+enum MembershipRole {
+  owner
+  employee
+
+  @@map("membership_role")
+}
+
+model Membership {
+  id        String         @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  tenantId  String         @map("tenant_id") @db.Uuid
+  userId    String         @map("user_id") @db.Uuid
+  role      MembershipRole
+  createdAt DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, userId])
+  @@index([userId])
+  @@map("memberships")
+}
+
+model TenantSettings {
+  tenantId String @id @map("tenant_id") @db.Uuid
+
+  timezone String
+  currency String @db.VarChar(3)
+  locale   String
+
+  cancelCutoffHours   Int @map("cancel_cutoff_hours")
+  minNoticeHours      Int @map("min_notice_hours")
+  maxHorizonDays      Int @map("max_horizon_days")
+  reminderHoursBefore Int @map("reminder_hours_before")
+
+  autoConfirm Boolean  @default(false) @map("auto_confirm")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("tenant_settings")
+}
+
+model Invite {
+  id         String         @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  tenantId   String         @map("tenant_id") @db.Uuid
+  email      String
+  role       MembershipRole
+  tokenHash  String         @unique @map("token_hash")
+  expiresAt  DateTime       @map("expires_at") @db.Timestamptz(3)
+  acceptedAt DateTime?      @map("accepted_at") @db.Timestamptz(3)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, email])
+  @@index([expiresAt])
+  @@map("invites")
+}
