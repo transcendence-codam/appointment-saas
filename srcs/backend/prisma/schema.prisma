@@ -1,8 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -12,9 +10,102 @@ datasource db {
   provider = "postgresql"
 }
 
-/// tmp table to verify Prisma + Postgres works with our setup
-model Test {
-  id        Int      @id @default(autoincrement())
-  name      String
-  createdAt DateTime @default(now())
+// tmp tenant table
+model Tenant {
+  id              String            @id @default(uuid()) @db.Uuid
+
+  clients         Client[]
+  appointments    Appointment[]
+
+  @@map("tenant")
+}
+
+model Client {
+  id              String            @id @default(uuid()) @db.Uuid
+  tenant          Tenant            @relation(fields: [tenant_id], references: [id])
+  tenant_id       String            @db.Uuid
+  email           String            @db.VarChar(255)
+  name            String            @db.VarChar(255)
+  phone           String?           @db.VarChar(50)
+  created_at      DateTime          @default(now())
+
+  appointments    Appointment[]
+
+  @@unique([tenant_id, email])
+  @@index([tenant_id])
+  @@map("client")
+}
+
+model Appointment {
+  id                        String                @id @default(uuid()) @db.Uuid
+  tenant                    Tenant                @relation(fields: [tenant_id], references: [id])
+  tenant_id                 String                @db.Uuid
+  client                    Client                @relation(fields: [client_id], references: [id])
+  client_id                 String                @db.Uuid
+  // service                   Service             @relation((fields: [service_id], references: [id]))
+  // service_id                String              @db.Uuid
+  // staff                     Staff               @relation(fields: [staff_id], references: [id])
+  // staff_id                  String              @db.Uuid
+  starts_at                 DateTime
+  ends_at                   DateTime
+  status                    AppointmentStatus     @default(confirmed)
+  reference                 String                @unique
+  service_name_snapshot     String?               @db.VarChar(510)
+  price_cents_snapshot      Int?
+  created_at                DateTime              @default(now())
+  updated_at                DateTime              @updatedAt
+
+  events                    AppointmentEvent[]
+
+  @@map("appointment")
+}
+
+model AppointmentEvent {
+  id                     String                  @id @default(uuid()) @db.Uuid
+  appointment            Appointment             @relation(fields: [appointment_id], references: [id])
+  appointment_id         String                  @db.Uuid
+  type                   AppointmentEventType
+  actor                  Actor
+  actor_user_id          String?                 @db.Uuid
+  old_starts_at          DateTime?
+  new_starts_at          DateTime?
+  reason                 String?                 @db.VarChar(500)
+  created_at             DateTime                @default(now())
+
+  @@map("appointment_event")
+}
+
+enum AppointmentEventType {
+  created             @map("created")     // by system (assigned automatically on creation)
+  rescheduled         @map("rescheduled") // by staff or client
+  cancelled           @map("cancelled")   // by staff or client
+  completed           @map("completed")   // by staff or system (automatically after appointment time is 
+  noshow              @map("noshow")      // by staff only
+
+  @@map("appointment_event_type")
+}
+
+// AS transitions map
+// confirmed -> confirmed     rescheduled event
+// confirmed -> cancelled     cancelled event
+// confirmed -> completed     completed event
+// confirmed -> noshow        noshow event
+// completed -> noshow        noshow event to fix automatic completed
+// cancelled is final
+// noshow is final
+enum AppointmentStatus {
+  confirmed           @map("confirmed")
+  completed           @map("completed")
+  cancelled           @map("cancelled")
+  noshow              @map("noshow")
+
+  @@map("appointment_status")
+}
+
+enum Actor {
+  staff               @map("staff")
+  client              @map("client")
+  system              @map("system")
+
+  @@map("actor")
 }
