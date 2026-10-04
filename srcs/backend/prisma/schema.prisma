@@ -12,67 +12,71 @@ datasource db {
 
 // tmp tenant table
 model Tenant {
-  id              String            @id @default(uuid()) @db.Uuid
+  id              String            @id @default(dbgenerated("uuidv7()")) @db.Uuid
 
   clients         Client[]
   appointments    Appointment[]
 
-  @@map("tenant")
+  @@map("tenants")
 }
 
 model Client {
-  id              String            @id @default(uuid()) @db.Uuid
-  tenant          Tenant            @relation(fields: [tenant_id], references: [id])
-  tenant_id       String            @db.Uuid
+  id              String            @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  tenantId        String            @db.Uuid @map("tenant_id")
   email           String            @db.VarChar(255)
   name            String            @db.VarChar(255)
   phone           String?           @db.VarChar(50)
-  created_at      DateTime          @default(now())
+  createdAt       DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
 
+  tenant          Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   appointments    Appointment[]
 
-  @@unique([tenant_id, email])
-  @@index([tenant_id])
-  @@map("client")
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@map("clients")
 }
 
 model Appointment {
-  id                        String                @id @default(uuid()) @db.Uuid
-  tenant                    Tenant                @relation(fields: [tenant_id], references: [id])
-  tenant_id                 String                @db.Uuid
-  client                    Client                @relation(fields: [client_id], references: [id])
-  client_id                 String                @db.Uuid
-  // service                   Service             @relation((fields: [service_id], references: [id]))
-  // service_id                String              @db.Uuid
-  // staff                     Staff               @relation(fields: [staff_id], references: [id])
-  // staff_id                  String              @db.Uuid
-  starts_at                 DateTime
-  ends_at                   DateTime
+  id                        String                @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  tenantId                  String                @db.Uuid @map("tenant_id")
+  clientId                  String                @db.Uuid @map("client_id")
+  // serviceId                 String                @db.Uuid @map("service_id")
+  // staffId                   String                @db.Uuid @map("staff_id")
+  startsAt                  DateTime              @db.Timestamptz(3) @map("starts_at")
+  endsAt                    DateTime              @db.Timestamptz(3) @map("ends_at")
   status                    AppointmentStatus     @default(confirmed)
   reference                 String                @unique
-  service_name_snapshot     String?               @db.VarChar(510)
-  price_cents_snapshot      Int?
-  created_at                DateTime              @default(now())
-  updated_at                DateTime              @updatedAt
+  serviceNameSnapshot       String?               @db.VarChar(510) @map("service_name_snapshot")
+  priceCentsSnapshot        Int?                  @map("price_cents_snapshot")
+  createdAt                 DateTime              @default(now()) @db.Timestamptz(3) @map("created_at")
+  updatedAt                 DateTime              @default(now()) @updatedAt @db.Timestamptz(3) @map("updated_at")
+
+  tenant                    Tenant                @relation(fields: [tenantId], references: [id])
+  client                    Client                @relation(fields: [clientId], references: [id])
+  // service                   Service               @relation((fields: [serviceId], references: [id]))
+  // staff                     Staff                 @relation(fields: [staffId], references: [id])
 
   events                    AppointmentEvent[]
 
-  @@map("appointment")
+  @@index([clientId])
+  @@map("appointments")
 }
 
 model AppointmentEvent {
-  id                     String                  @id @default(uuid()) @db.Uuid
-  appointment            Appointment             @relation(fields: [appointment_id], references: [id])
-  appointment_id         String                  @db.Uuid
+  id                     String                  @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  appointmentId          String                  @db.Uuid @map("appointment_id")
   type                   AppointmentEventType
   actor                  Actor
-  actor_user_id          String?                 @db.Uuid
-  old_starts_at          DateTime?
-  new_starts_at          DateTime?
+  actorUserId            String?                 @db.Uuid @map("actor_user_id")
+  oldStartsAt            DateTime?               @db.Timestamptz(3) @map("old_starts_at")
+  newStartsAt            DateTime?               @db.Timestamptz(3) @map("new_starts_at")
   reason                 String?                 @db.VarChar(500)
-  created_at             DateTime                @default(now())
+  createdAt              DateTime                @default(now()) @db.Timestamptz(3) @map("created_at")
 
-  @@map("appointment_event")
+  appointment            Appointment             @relation(fields: [appointmentId], references: [id])
+
+  @@index([appointmentId])
+  @@map("appointment_events")
 }
 
 enum AppointmentEventType {
