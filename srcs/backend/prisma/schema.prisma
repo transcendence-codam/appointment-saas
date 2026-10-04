@@ -14,7 +14,45 @@ datasource db {
 
 /// tmp table to verify Prisma + Postgres works with our setup
 model Test {
-  id        Int      @id @default(autoincrement())
+  id       	Int      @id @default(autoincrement())
   name      String
-  createdAt DateTime @default(now())
+  createdAt	DateTime @default(now())
+}
+
+model Staff {
+  id			String	@id @default(dbgenerated("uuidv7()")) @db.Uuid
+  tenantId		String	@db.Uuid @map("tenant_id")
+  membershipId	String	@db.Uuid @map("membership_id")
+  displayName	String	@map("display_name")
+  isActive		Boolean	@default(true) @map("is_active")
+
+  services		StaffService[]
+
+  @@index([tenantId, isActive])
+}
+
+model Service {
+  id			String		@id @default(dbgenerated("uuidv7()")) @db.Uuid
+  tenantId		String		@db.Uuid @map("tenant_id")
+  name			String
+  durationMin	Int			@map("duration_min")      
+  priceCents	Int			@map("price_cents")
+  sortOrder 	Int			@default(0) @map("sort_order")
+  isActive		Boolean		@default(true) @map("is_active")
+  createdAt		DateTime	@default(now()) @map("created_at") @db.Timestamptz(3)
+
+  staff			StaffService[]
+
+  @@index([tenantId, isActive])
+}
+
+model StaffService {
+  staffId	String	@db.Uuid @map("staff_id")
+  serviceId	String	@db.Uuid @map("service_id")
+
+  staff		Staff	@relation(fields: [staffId], references: [id])
+  service	Service @relation(fields: [serviceId], references: [id])
+
+  @@id([staffId, serviceId]) // find all services for this staff member
+  @@index([serviceId]) // added this to help find all staff for this service
 }
