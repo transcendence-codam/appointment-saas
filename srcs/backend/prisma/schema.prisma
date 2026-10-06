@@ -1,8 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -12,9 +10,239 @@ datasource db {
   provider = "postgresql"
 }
 
-/// tmp table to verify Prisma + Postgres works with our setup
-model Test {
-  id        Int      @id @default(autoincrement())
+// ====== MODELS ======
+
+model User {
+  id           String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  name         String
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  memberships Membership[]
+
+  @@map("users")
+}
+
+model Tenant {
+  id        String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
   name      String
-  createdAt DateTime @default(now())
+  slug      String   @unique
+  address   String?
+  phone     String?
+  logoUrl   String?  @map("logo_url")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  memberships  Membership[]
+  invites      Invite[]
+  clients      Client[]
+  appointments Appointment[]
+  staffs       Staff[]
+  services     Service[]
+
+  settings TenantSettings?
+
+  @@map("tenants")
+}
+
+model Membership {
+  id        String         @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  tenantId  String         @map("tenant_id") @db.Uuid
+  userId    String         @map("user_id") @db.Uuid
+  role      MembershipRole
+  createdAt DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, userId])
+  @@index([userId])
+  @@map("memberships")
+}
+
+model TenantSettings {
+  tenantId String @id @map("tenant_id") @db.Uuid
+
+  timezone String
+  currency String @db.VarChar(3)
+  locale   String
+
+  cancelCutoffHours   Int @map("cancel_cutoff_hours")
+  minNoticeHours      Int @map("min_notice_hours")
+  maxHorizonDays      Int @map("max_horizon_days")
+  reminderHoursBefore Int @map("reminder_hours_before")
+
+  autoConfirm Boolean  @default(false) @map("auto_confirm")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("tenant_settings")
+}
+
+model Invite {
+  id         String         @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  tenantId   String         @map("tenant_id") @db.Uuid
+  email      String
+  role       MembershipRole
+  tokenHash  String         @unique @map("token_hash")
+  expiresAt  DateTime       @map("expires_at") @db.Timestamptz(3)
+  acceptedAt DateTime?      @map("accepted_at") @db.Timestamptz(3)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, email])
+  @@index([expiresAt])
+  @@map("invites")
+}
+
+model Staff {
+  id           String  @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  tenantId     String  @map("tenant_id") @db.Uuid
+  membershipId String  @map("membership_id") @db.Uuid
+  displayName  String  @map("display_name")
+  isActive     Boolean @default(true) @map("is_active")
+
+  services     StaffService[]
+  appointments Appointment[]
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, isActive])
+  @@map("staff")
+}
+
+model Service {
+  id          String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  name        String
+  durationMin Int      @map("duration_min")
+  priceCents  Int      @map("price_cents")
+  sortOrder   Int      @default(0) @map("sort_order")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  staff        StaffService[]
+  appointments Appointment[]
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, isActive])
+  @@map("services")
+}
+
+model StaffService {
+  staffId   String @map("staff_id") @db.Uuid
+  serviceId String @map("service_id") @db.Uuid
+
+  staff   Staff   @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@id([staffId, serviceId]) // find all services for this staff member
+  @@index([serviceId]) // added this to help find all staff for this service
+  @@map("staff_services")
+}
+
+model Client {
+  id        String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  email     String   @db.VarChar(255)
+  name      String   @db.VarChar(255)
+  phone     String?  @db.VarChar(50)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@map("clients")
+}
+
+model Appointment {
+  id                  String            @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  tenantId            String            @map("tenant_id") @db.Uuid
+  clientId            String            @map("client_id") @db.Uuid
+  serviceId           String            @map("service_id") @db.Uuid
+  staffId             String            @map("staff_id") @db.Uuid
+  startsAt            DateTime          @map("starts_at") @db.Timestamptz(3)
+  endsAt              DateTime          @map("ends_at") @db.Timestamptz(3)
+  status              AppointmentStatus
+  reference           String            @unique
+  serviceNameSnapshot String?           @map("service_name_snapshot") @db.VarChar(510)
+  priceCentsSnapshot  Int?              @map("price_cents_snapshot")
+  createdAt           DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  client  Client  @relation(fields: [clientId], references: [id])
+  service Service @relation(fields: [serviceId], references: [id])
+  staff   Staff   @relation(fields: [staffId], references: [id])
+
+  events AppointmentEvent[]
+
+  @@index([clientId])
+  @@map("appointments")
+}
+
+model AppointmentEvent {
+  id            String               @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  appointmentId String               @map("appointment_id") @db.Uuid
+  type          AppointmentEventType
+  actor         Actor
+  actorId       String?              @map("actor_id") @db.Uuid
+  oldStartsAt   DateTime?            @map("old_starts_at") @db.Timestamptz(3)
+  newStartsAt   DateTime?            @map("new_starts_at") @db.Timestamptz(3)
+  reason        String?              @db.VarChar(500)
+  createdAt     DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@map("appointment_events")
+}
+
+// ====== ENUMS ======
+
+enum MembershipRole {
+  owner    @map("owner")
+  employee @map("employee")
+
+  @@map("membership_role")
+}
+
+enum AppointmentEventType {
+  created     @map("created") // by system (assigned automatically on creation)
+  rescheduled @map("rescheduled") // by staff or client
+  cancelled   @map("cancelled") // by staff or client
+  completed   @map("completed") // by staff or system (automatically after appointment time is over)
+  noshow      @map("noshow") // by staff only
+
+  @@map("appointment_event_type")
+}
+
+// AS transitions map
+// pending -> confirmed
+// confirmed -> pending     rescheduled event (do we want auto-confirm for rescheduled?)
+// confirmed -> cancelled     cancelled event
+// confirmed -> completed     completed event
+// confirmed -> noshow        noshow event
+// completed -> noshow        noshow event to fix automatic completed
+// cancelled is final
+// noshow is final
+enum AppointmentStatus {
+  pending   @map("pending")
+  confirmed @map("confirmed")
+  completed @map("completed")
+  cancelled @map("cancelled")
+  noshow    @map("noshow")
+
+  @@map("appointment_status")
+}
+
+enum Actor {
+  staff  @map("staff")
+  client @map("client")
+  system @map("system")
+
+  @@map("actor")
 }
