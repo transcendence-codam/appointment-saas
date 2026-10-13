@@ -108,6 +108,7 @@ model Staff {
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
+  @@unique([id, tenantId])
   @@index([tenantId, isActive])
   @@map("staff")
 }
@@ -127,6 +128,7 @@ model Service {
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
+  @@unique([id, tenantId])
   @@index([tenantId, isActive])
   @@map("services")
 }
@@ -154,6 +156,7 @@ model Client {
   tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   appointments Appointment[]
 
+  @@unique([id, tenantId])
   @@unique([tenantId, email])
   @@index([tenantId])
   @@map("clients")
@@ -175,9 +178,9 @@ model Appointment {
   updatedAt           DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  client  Client  @relation(fields: [clientId], references: [id])
-  service Service @relation(fields: [serviceId], references: [id])
-  staff   Staff   @relation(fields: [staffId], references: [id])
+  client  Client  @relation(fields: [clientId, tenantId], references: [id, tenantId])
+  service Service @relation(fields: [serviceId, tenantId], references: [id, tenantId])
+  staff   Staff   @relation(fields: [staffId, tenantId], references: [id, tenantId])
 
   events AppointmentEvent[]
 
