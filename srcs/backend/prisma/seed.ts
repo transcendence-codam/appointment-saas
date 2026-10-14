@@ -62,7 +62,12 @@ async function main() {
   start.setUTCHours(10, 0, 0, 0);
   const at = (minutes: number) => new Date(start.getTime() + minutes * 60_000);
 
-  const book = (reference: string, from: number, to: number, status: 'confirmed' | 'pending' = 'confirmed') =>
+  const book = (
+    reference: string,
+    from: number,
+    to: number,
+    status: 'confirmed' | 'pending' = 'confirmed',
+  ) =>
     prisma.appointment.create({
       data: {
         tenantId: tenant.id,
