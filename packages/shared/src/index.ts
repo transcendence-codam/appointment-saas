@@ -2,3 +2,5 @@
 // import { type ApiError } from '@appointment-saas/shared';
 
 export * from './errors/index.js';
+export * from './appointment/index.js';
+export * from './client/index.js';
