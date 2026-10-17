@@ -21,13 +21,16 @@ import { apiErrorSchema, zodSchema } from '../common/swagger.js';
 @ApiTags('appointment')
 @Controller('appointment')
 export class AppointmentController {
-  constructor(private readonly appointmentService: AppointmentService) { }
+  constructor(private readonly appointmentService: AppointmentService) {}
 
   @Post('public/:slug/bookings')
   @ApiOperation({ summary: 'Book an appointment as a client' })
   @ApiParam({ name: 'slug', description: 'Tenant slug', example: 'demo-salon' })
   @ApiBody({ schema: zodSchema(createAppoinmentSchema) })
-  @ApiCreatedResponse({ description: 'Appointment booked', schema: zodSchema(createAppointmentResponseSchema) })
+  @ApiCreatedResponse({
+    description: 'Appointment booked',
+    schema: zodSchema(createAppointmentResponseSchema),
+  })
   @ApiNotFoundResponse({
     description: 'Tenant or service not found',
     schema: apiErrorSchema(ErrorCode.TENANT_NOT_FOUND, ErrorCode.SERVICE_NOT_FOUND),

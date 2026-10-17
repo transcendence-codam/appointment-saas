@@ -14,10 +14,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const body: ApiError = isApiError(payload)
       ? payload
       : {
-        code: HttpStatus[status] ?? 'HTTP_ERROR',
-        message: exception.message,
-        details: typeof payload === 'object' ? payload : undefined,
-      };
+          code: HttpStatus[status] ?? 'HTTP_ERROR',
+          message: exception.message,
+          details: typeof payload === 'object' ? payload : undefined,
+        };
 
     response.status(status).json(body);
   }

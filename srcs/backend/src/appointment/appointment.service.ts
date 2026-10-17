@@ -1,7 +1,17 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { ErrorCode, type CreateAppointmentInput, type CreateAppointmentResponse } from '@appointment-saas/shared';
-import { Actor, AppointmentEventType, AppointmentStatus, Prisma, type Appointment } from '../generated/prisma/client.js';
+import {
+  ErrorCode,
+  type CreateAppointmentInput,
+  type CreateAppointmentResponse,
+} from '@appointment-saas/shared';
+import {
+  Actor,
+  AppointmentEventType,
+  AppointmentStatus,
+  Prisma,
+  type Appointment,
+} from '../generated/prisma/client.js';
 import { ApiException } from '../common/api-exception.js';
 import { pgErrorCode } from '../common/prisma-errors.js';
 import { isSlotFree, isStaffAssigned, issueToken } from './mock.js';
@@ -13,7 +23,7 @@ export class AppointmentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly clientService: ClientService,
-  ) { }
+  ) {}
 
   /*steps to create an appointment:
 1. find tennat by its slug, receive tenantId
@@ -27,24 +37,35 @@ export class AppointmentService {
 8. create magic link and url to manage appointment
 10. emit bookig_created event to send email to client about booking with reference id
 9. return appointment booked successfuly response to the user (with id, reference code, start_at, end_at) */
-  async bookAppointment(slug: string, body: CreateAppointmentInput)
-    : Promise<CreateAppointmentResponse> {
-
+  async bookAppointment(
+    slug: string,
+    body: CreateAppointmentInput,
+  ): Promise<CreateAppointmentResponse> {
     return this.prisma.$transaction(async (tx) => {
       const { serviceId, staffId, startsAt } = body;
 
       const tenant = await tx.tenant.findUnique({ where: { slug } });
       if (!tenant) {
-        throw new ApiException(HttpStatus.NOT_FOUND, ErrorCode.TENANT_NOT_FOUND, `Tenant "${slug}" not found`);
+        throw new ApiException(
+          HttpStatus.NOT_FOUND,
+          ErrorCode.TENANT_NOT_FOUND,
+          `Tenant "${slug}" not found`,
+        );
       }
 
       const service = await tx.service.findFirst({ where: { id: serviceId, tenantId: tenant.id } });
-      if (!service || !service.isActive) { // TODO separate errors, move to servicesService?
-        throw new ApiException(HttpStatus.NOT_FOUND, ErrorCode.SERVICE_NOT_FOUND, `Service "${serviceId}"`)
+      if (!service || !service.isActive) {
+        // TODO separate errors, move to servicesService?
+        throw new ApiException(
+          HttpStatus.NOT_FOUND,
+          ErrorCode.SERVICE_NOT_FOUND,
+          `Service "${serviceId}"`,
+        );
       }
 
       const assigned = await isStaffAssigned(staffId, serviceId, tx);
-      if (!assigned) { // chec staff exist, separate errot
+      if (!assigned) {
+        // chec staff exist, separate errot
         throw new ApiException(HttpStatus.BAD_REQUEST, ErrorCode.STAFF_NOT_ASSIGNED);
       }
 
@@ -56,18 +77,21 @@ export class AppointmentService {
       const client = await this.clientService.upsertForBooking(tenant.id, body.client, tx);
 
       const start = new Date(startsAt); // TODO check boundaries (past, horizon)
-      const appt = await this.createAppointment({
-        tenantId: tenant.id,
-        clientId: client.id,
-        serviceId,
-        staffId,
-        startsAt: start,
-        endsAt: new Date(start.getTime() + service.durationMin * 60_000),
-        status: AppointmentStatus.pending, // or auto-confirmed?
-        reference: this.generateRandomReferenceCode(),
-        serviceNameSnapshot: service.name,
-        priceCentsSnapshot: service.priceCents,
-      }, tx);
+      const appt = await this.createAppointment(
+        {
+          tenantId: tenant.id,
+          clientId: client.id,
+          serviceId,
+          staffId,
+          startsAt: start,
+          endsAt: new Date(start.getTime() + service.durationMin * 60_000),
+          status: AppointmentStatus.pending, // or auto-confirmed?
+          reference: this.generateRandomReferenceCode(),
+          serviceNameSnapshot: service.name,
+          priceCentsSnapshot: service.priceCents,
+        },
+        tx,
+      );
       // log event (move to createAppointment?)
       await tx.appointmentEvent.create({
         data: {
