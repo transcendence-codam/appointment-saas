@@ -183,6 +183,7 @@ model Appointment {
   staff   Staff   @relation(fields: [staffId, tenantId], references: [id, tenantId])
 
   events AppointmentEvent[]
+  magicLinkTokens MagicLinkToken[]
 
   @@index([clientId])
   @@map("appointments")
@@ -202,6 +203,19 @@ model AppointmentEvent {
   appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
 
   @@map("appointment_events")
+}
+
+model MagicLinkToken {
+  id            String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  appointmentId String   @map("appointment_id") @db.Uuid
+  tokenHash     String   @unique @map("token_hash")
+  expiresAt     DateTime @map("expires_at") @db.Timestamptz(3)
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@index([appointmentId])
+  @@index([expiresAt])
+  @@map("magic_link_token")
 }
 
 // ====== ENUMS ======
