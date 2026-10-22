@@ -5,6 +5,7 @@ export const ErrorCode = {
   STAFF_NOT_ASSIGNED: 'STAFF_NOT_ASSIGNED',
   SLOT_UNAVAILABLE: 'SLOT_UNAVAILABLE',
   SLOT_TAKEN: 'SLOT_TAKEN',
+  VALIDATION_FAILED: 'VALIDATION_FAILED',
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
@@ -16,4 +17,5 @@ export const ErrorMessage: Record<ErrorCode, string> = {
   STAFF_NOT_ASSIGNED: 'Selected staff member does not provide this service',
   SLOT_UNAVAILABLE: 'Selected time is not available',
   SLOT_TAKEN: 'Selected time was just booked by someone else',
+  VALIDATION_FAILED: 'Request data is invalid',
 };

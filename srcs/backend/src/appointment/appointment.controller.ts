@@ -17,6 +17,7 @@ import {
 } from '@appointment-saas/shared';
 import { AppointmentService } from './appointment.service.js';
 import { apiErrorSchema, zodSchema } from '../common/swagger.js';
+import { ZodValidationPipe } from '../common/zod-validation.pipe.js';
 
 @ApiTags('appointment')
 @Controller('appointment')
@@ -37,13 +38,20 @@ export class AppointmentController {
   })
   @ApiBadRequestResponse({
     description: 'Slot is not available',
-    schema: apiErrorSchema(ErrorCode.STAFF_NOT_ASSIGNED, ErrorCode.SLOT_UNAVAILABLE),
+    schema: apiErrorSchema(
+      ErrorCode.VALIDATION_FAILED,
+      ErrorCode.STAFF_NOT_ASSIGNED,
+      ErrorCode.SLOT_UNAVAILABLE,
+    ),
   })
   @ApiConflictResponse({
     description: 'Slot was booked by someone else at the same time',
     schema: apiErrorSchema(ErrorCode.SLOT_TAKEN),
   })
-  async create(@Param('slug') slug: string, @Body() body: CreateAppointmentInput) {
+  async create(
+    @Param('slug') slug: string,
+    @Body(new ZodValidationPipe(createAppoinmentSchema)) body: CreateAppointmentInput,
+  ) {
     return this.appointmentService.bookAppointment(slug, body);
   }
 }
