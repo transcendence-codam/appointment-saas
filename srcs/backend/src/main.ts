@@ -1,12 +1,13 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module.js';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { HttpExceptionFilter } from './common/api-exception.filter.js';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // this setting should always be consistent with frontend/vite.config.ts
-  app.setGlobalPrefix('api');
+  app.setGlobalPrefix('api'); // this setting should always be consistent with frontend/vite.config.ts
+  app.useGlobalFilters(new HttpExceptionFilter());
 
   // swagger configuration
   const config = new DocumentBuilder()
