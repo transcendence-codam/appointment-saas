@@ -25,7 +25,7 @@ export class AppointmentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly clientService: ClientService,
-  ) { }
+  ) {}
 
   /*steps to create an appointment:
 1. find tennat by its slug, receive tenantId
@@ -157,8 +157,19 @@ export class AppointmentService {
   4. create appointmentEvent
   5. TODO emit event to send email to client
   5. return updated appointemnt to frontend */
-  async cancelAppointment({ id, tenantId, actor, actorId, reason }:
-    { id: string; tenantId: string; actor: Actor; actorId?: string; reason?: string; }): Promise<Appointment> {
+  async cancelAppointment({
+    id,
+    tenantId,
+    actor,
+    actorId,
+    reason,
+  }: {
+    id: string;
+    tenantId: string;
+    actor: Actor;
+    actorId?: string;
+    reason?: string;
+  }): Promise<Appointment> {
     return this.prisma.$transaction(async (tx) => {
       const appt = await this.findAppointment(id, tenantId, tx);
       await this.validateChange(appt, 'cancel', actor, tx);
@@ -197,15 +208,27 @@ export class AppointmentService {
   7. create appointmentEvent with status transation
   8. send email appoitnmentRescheduled for event emitter
   9. return updated event to client */
-  async rescheduleAppointment({ id, tenantId, actor, actorId, newStartsAt }:
-    { id: string; tenantId: string; actor: Actor; actorId?: string; newStartsAt: Date; }): Promise<Appointment> {
+  async rescheduleAppointment({
+    id,
+    tenantId,
+    actor,
+    actorId,
+    newStartsAt,
+  }: {
+    id: string;
+    tenantId: string;
+    actor: Actor;
+    actorId?: string;
+    newStartsAt: Date;
+  }): Promise<Appointment> {
     return this.prisma.$transaction(async (tx) => {
       const appt = await this.findAppointment(id, tenantId, tx);
 
       await this.validateChange(appt, 'reschedule', actor, tx);
       const status = actor === Actor.client ? AppointmentStatus.pending : appt.status;
 
-      if (newStartsAt.getTime() <= Date.now()) { // TODO max horizon from tenant settings for new slot
+      if (newStartsAt.getTime() <= Date.now()) {
+        // TODO max horizon from tenant settings for new slot
         throw new ApiException(HttpStatus.BAD_REQUEST, ErrorCode.SLOT_UNAVAILABLE);
       }
 
@@ -226,7 +249,7 @@ export class AppointmentService {
         {
           status,
           startsAt: newStartsAt,
-          endsAt: new Date(newStartsAt.getTime() + apptDuration)
+          endsAt: new Date(newStartsAt.getTime() + apptDuration),
         },
         tx,
       );
@@ -247,8 +270,11 @@ export class AppointmentService {
     });
   }
 
-  private async findAppointment(id: string, tenantId: string, tx: Prisma.TransactionClient)
-    : Promise<Appointment> {
+  private async findAppointment(
+    id: string,
+    tenantId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<Appointment> {
     const appt = await tx.appointment.findFirst({ where: { id, tenantId } });
     if (!appt) {
       throw new ApiException(HttpStatus.NOT_FOUND, ErrorCode.APPOINTMENT_NOT_FOUND);
@@ -257,7 +283,12 @@ export class AppointmentService {
     return appt;
   }
 
-  private async validateChange(appt: Appointment, action: AppointmentAction, actor: Actor, tx: Prisma.TransactionClient): Promise<void> {
+  private async validateChange(
+    appt: Appointment,
+    action: AppointmentAction,
+    actor: Actor,
+    tx: Prisma.TransactionClient,
+  ): Promise<void> {
     if (!isActionAllowed(action, appt.status, actor)) {
       throw new ApiException(HttpStatus.CONFLICT, ErrorCode.INVALID_STATUS_TRANSITION);
     }
