@@ -174,6 +174,7 @@ model Appointment {
   reference           String            @unique
   serviceNameSnapshot String?           @map("service_name_snapshot") @db.VarChar(510)
   priceCentsSnapshot  Int?              @map("price_cents_snapshot")
+  version             Int               @default(0)
   createdAt           DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt           DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
