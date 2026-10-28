@@ -52,6 +52,6 @@ export class AppointmentController {
     @Param('slug') slug: string,
     @Body(new ZodValidationPipe(createAppoinmentSchema)) body: CreateAppointmentInput,
   ) {
-    return this.appointmentService.bookAppointment(slug, body);
+    return await this.appointmentService.bookAppointment(slug, body);
   }
 }
