@@ -5,7 +5,10 @@ import './index.css';
 import { router } from './router';
 import '@fontsource-variable/public-sans';
 
-createRoot(document.getElementById('root')!).render(
+const rootElements = document.getElementById('root');
+if (!rootElements) throw new Error('Element root not found');
+
+createRoot(rootElements).render(
   <StrictMode>
     <RouterProvider router={router} />
   </StrictMode>,

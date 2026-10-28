@@ -90,8 +90,7 @@ async function main() {
 }
 
 main()
-  .catch((e) => {
-    console.error(e);
+  .catch(() => {
     process.exitCode = 1;
   })
   .finally(() => prisma.$disconnect());

@@ -15,7 +15,7 @@ export async function isSlotFree(
   void staffId;
   void startsAt;
   void tx;
-  return await true;
+  return await new Promise(() => true);
 }
 
 export async function isStaffAssigned(
@@ -26,7 +26,7 @@ export async function isStaffAssigned(
   void staffId;
   void serviceId;
   void tx;
-  return await true;
+  return await new Promise(() => true);
 }
 
 // mock token issue, real version will store a hashed token in the db
@@ -35,5 +35,7 @@ export async function issueToken(
   tx: Prisma.TransactionClient,
 ): Promise<{ token: string; url: string }> {
   void tx;
-  return await { token: apptId, url: `http://localhost:3000/${apptId}` };
+  return await new Promise(() => {
+    return { token: apptId, url: `http://localhost:3000/${apptId}` };
+  });
 }
