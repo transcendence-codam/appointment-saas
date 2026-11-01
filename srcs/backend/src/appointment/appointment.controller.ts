@@ -19,8 +19,8 @@ import { AppointmentService } from './appointment.service.js';
 import { apiErrorSchema, zodSchema } from '../common/swagger.js';
 import { ZodValidationPipe } from '../common/zod-validation.pipe.js';
 
-@ApiTags('appointment')
-@Controller('appointment')
+@ApiTags()
+@Controller()
 export class AppointmentController {
   constructor(private readonly appointmentService: AppointmentService) {}
 
@@ -40,6 +40,7 @@ export class AppointmentController {
     description: 'Slot is not available',
     schema: apiErrorSchema(
       ErrorCode.VALIDATION_FAILED,
+      ErrorCode.SERVICE_INACTIVE,
       ErrorCode.STAFF_NOT_ASSIGNED,
       ErrorCode.SLOT_UNAVAILABLE,
     ),

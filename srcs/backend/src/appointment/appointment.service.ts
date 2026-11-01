@@ -13,6 +13,7 @@ import {
   AppointmentStatus,
   Prisma,
   type Appointment,
+  type TenantSettings,
 } from '../generated/prisma/client.js';
 import { ApiException } from '../common/api-exception.js';
 import { pgErrorCode } from '../common/prisma-errors.js';
@@ -56,14 +57,21 @@ export class AppointmentService {
       }
 
       const service = await tx.service.findFirst({ where: { id: serviceId, tenantId: tenant.id } });
-      if (!service || !service.isActive) {
-        // TODO separate errors, move to servicesService?
+      // TODO move to servicesService?
+      if (!service) {
         throw new ApiException(
           HttpStatus.NOT_FOUND,
           ErrorCode.SERVICE_NOT_FOUND,
           `Service "${serviceId}"`,
         );
       }
+      if (!service.isActive) {
+        throw new ApiException(HttpStatus.BAD_REQUEST, ErrorCode.SERVICE_INACTIVE);
+      }
+
+      const start = new Date(startsAt);
+      const settings = await this.findTenantSettings(tenant.id, tx);
+      this.validateBookingWindow(start, settings);
 
       const assigned = await isStaffAssigned(staffId, serviceId, tx);
       if (!assigned) {
@@ -78,7 +86,6 @@ export class AppointmentService {
 
       const client = await this.clientService.upsertForBooking(tenant.id, body.client, tx);
 
-      const start = new Date(startsAt); // TODO check boundaries (past, horizon)
       const appt = await this.createAppointment(
         {
           tenantId: tenant.id,
@@ -172,7 +179,8 @@ export class AppointmentService {
   }): Promise<Appointment> {
     return this.prisma.$transaction(async (tx) => {
       const appt = await this.findAppointment(id, tenantId, tx);
-      await this.validateChange(appt, 'cancel', actor, tx);
+      const settings = await this.findTenantSettings(tenantId, tx);
+      this.validateChange(appt, 'cancel', actor, actorId, settings);
 
       const updated = await this.updateIfUnchanged(
         appt,
@@ -223,12 +231,14 @@ export class AppointmentService {
   }): Promise<Appointment> {
     return this.prisma.$transaction(async (tx) => {
       const appt = await this.findAppointment(id, tenantId, tx);
+      const settings = await this.findTenantSettings(tenantId, tx);
 
-      await this.validateChange(appt, 'reschedule', actor, tx);
+      this.validateChange(appt, 'reschedule', actor, actorId, settings);
       const status = actor === Actor.client ? AppointmentStatus.pending : appt.status;
 
-      if (newStartsAt.getTime() <= Date.now()) {
-        // TODO max horizon from tenant settings for new slot
+      if (actor === Actor.client) {
+        this.validateBookingWindow(newStartsAt, settings);
+      } else if (newStartsAt.getTime() <= Date.now()) {
         throw new ApiException(HttpStatus.BAD_REQUEST, ErrorCode.SLOT_UNAVAILABLE);
       }
 
@@ -283,12 +293,37 @@ export class AppointmentService {
     return appt;
   }
 
-  private async validateChange(
+  private async findTenantSettings(
+    tenantId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<TenantSettings | null> {
+    // TODO use tenantService here
+    return tx.tenantSettings.findUnique({ where: { tenantId } });
+  }
+
+  private validateBookingWindow(startsAt: Date, settings: TenantSettings | null): void {
+    const msUntilStart = startsAt.getTime() - Date.now();
+    const minNoticeMs = (settings?.minNoticeHours ?? 0) * 3_600_000;
+
+    if (msUntilStart <= 0 || msUntilStart < minNoticeMs) {
+      throw new ApiException(HttpStatus.BAD_REQUEST, ErrorCode.SLOT_UNAVAILABLE);
+    }
+    if (settings && msUntilStart > settings.maxHorizonDays * 86_400_000) {
+      throw new ApiException(HttpStatus.BAD_REQUEST, ErrorCode.SLOT_UNAVAILABLE);
+    }
+  }
+
+  private validateChange(
     appt: Appointment,
     action: AppointmentAction,
     actor: Actor,
-    tx: Prisma.TransactionClient,
-  ): Promise<void> {
+    actorId: string | undefined,
+    settings: TenantSettings | null,
+  ): void {
+    if (actor === Actor.client && appt.clientId !== actorId) {
+      throw new ApiException(HttpStatus.NOT_FOUND, ErrorCode.APPOINTMENT_NOT_FOUND);
+    }
+
     if (!isActionAllowed(action, appt.status, actor)) {
       throw new ApiException(HttpStatus.CONFLICT, ErrorCode.INVALID_STATUS_TRANSITION);
     }
@@ -301,8 +336,6 @@ export class AppointmentService {
 
     // if actor is client they have extra validation of cutoff hours
     if (actor === Actor.client) {
-      // TODO use tenantService here
-      const settings = await tx.tenantSettings.findUnique({ where: { tenantId: appt.tenantId } });
       const cutoffMs = (settings?.cancelCutoffHours ?? 0) * 3_600_000;
 
       if (msUntilStart < cutoffMs) {
