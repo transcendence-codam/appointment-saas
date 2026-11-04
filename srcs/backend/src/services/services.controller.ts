@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post, Query } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post, Query, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiConflictResponse, ApiCreatedResponse, ApiNoContentResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { ServiceResponseDto } from "./dto/service-response.dto.js";
 import { TenantId } from "../common/decorators/tenant-id.decorator.js";
@@ -6,9 +6,11 @@ import { ServicesService } from "./services.service.js";
 import { ListServicesQueryDto } from "./dto/list-services-query.dto.js";
 import { CreateServiceDto } from "./dto/create-service.dto.js";
 import { UpdateServiceDto } from "./dto/update-service.dto.js";
+import { DevAuthGuard } from "../common/guards/dev-auth.guard.js";
 
 @ApiTags('services')
 @ApiBearerAuth()
+@UseGuards(DevAuthGuard)
 @Controller('services')
 export class ServicesController {
     constructor(private readonly services: ServicesService) {}
