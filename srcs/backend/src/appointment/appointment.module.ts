@@ -6,6 +6,7 @@ import { ClientModule } from '../client/client.module.js';
 
 @Module({
   imports: [PrismaModule, ClientModule],
+  exports: [AppointmentService],
   controllers: [AppointmentController],
   providers: [AppointmentService],
 })
