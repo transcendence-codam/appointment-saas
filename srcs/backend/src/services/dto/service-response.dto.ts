@@ -1,5 +1,4 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { LargeNumberLike } from 'crypto';
 
 export class ServiceResponseDto {
   @ApiProperty({ format: 'uuid' }) id!: string;
