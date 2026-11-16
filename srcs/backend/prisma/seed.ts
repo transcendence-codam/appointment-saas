@@ -91,6 +91,8 @@ async function main() {
 
 main()
   .catch((e) => {
+    // to remove when development ends
+    // oxlint-disable-next-line no-console
     console.error(e);
     process.exitCode = 1;
   })

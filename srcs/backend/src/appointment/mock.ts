@@ -3,28 +3,37 @@
 
 import { Prisma } from '../generated/prisma/client.js';
 
-export async function isSlotFree(
+export function isSlotFree(
   tenantId: string,
   serviceId: string,
   staffId: string,
   startsAt: string,
   tx: Prisma.TransactionClient,
 ): Promise<boolean> {
-  return true;
+  void tenantId;
+  void serviceId;
+  void staffId;
+  void startsAt;
+  void tx;
+  return Promise.resolve(true);
 }
 
-export async function isStaffAssigned(
+export function isStaffAssigned(
   staffId: string,
   serviceId: string,
   tx: Prisma.TransactionClient,
 ): Promise<boolean> {
-  return true;
+  void staffId;
+  void serviceId;
+  void tx;
+  return Promise.resolve(true);
 }
 
 // mock token issue, real version will store a hashed token in the db
-export async function issueToken(
+export function issueToken(
   apptId: string,
   tx: Prisma.TransactionClient,
 ): Promise<{ token: string; url: string }> {
-  return { token: apptId, url: `http://localhost:3000/${apptId}` };
+  void tx;
+  return Promise.resolve({ token: apptId, url: `http://localhost:3000/${apptId}` });
 }
