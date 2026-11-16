@@ -90,7 +90,10 @@ async function main() {
 }
 
 main()
-  .catch(() => {
+  .catch((e) => {
+    // to remove when development ends
+    // oxlint-disable-next-line no-console
+    console.error(e);
     process.exitCode = 1;
   })
   .finally(() => prisma.$disconnect());
