@@ -11,7 +11,7 @@ export class ClientService {
     entry: ClientInput,
     tx: Prisma.TransactionClient,
   ): Promise<Client> {
-    return tx.client.upsert({
+    return await tx.client.upsert({
       where: { tenantId_email: { tenantId, email: entry.email } },
       update: { name: entry.name, phone: entry.phone },
       create: { tenantId, ...entry },

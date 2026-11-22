@@ -17,7 +17,7 @@ import {
 } from '../generated/prisma/client.js';
 import { ApiException } from '../common/api-exception.js';
 import { pgErrorCode } from '../common/prisma-errors.js';
-import { isSlotFree, isStaffAssigned, issueToken } from './mock.js';
+import { isSlotFree, isStaffAssigned } from './mock.js';
 import { ClientService } from '../client/client.service.js';
 import { randomInt } from 'crypto';
 
@@ -44,7 +44,7 @@ export class AppointmentService {
     slug: string,
     body: CreateAppointmentInput,
   ): Promise<CreateAppointmentResponse> {
-    return this.prisma.$transaction(async (tx) => {
+    return await this.prisma.$transaction(async (tx) => {
       const { serviceId, staffId, startsAt } = body;
 
       const tenant = await tx.tenant.findUnique({ where: { slug } });
@@ -177,7 +177,7 @@ export class AppointmentService {
     actorId?: string;
     reason?: string;
   }): Promise<Appointment> {
-    return this.prisma.$transaction(async (tx) => {
+    return await this.prisma.$transaction(async (tx) => {
       const appt = await this.findAppointment(id, tenantId, tx);
       const settings = await this.findTenantSettings(tenantId, tx);
       this.validateChange(appt, 'cancel', actor, actorId, settings);
@@ -229,7 +229,7 @@ export class AppointmentService {
     actorId?: string;
     newStartsAt: Date;
   }): Promise<Appointment> {
-    return this.prisma.$transaction(async (tx) => {
+    return await this.prisma.$transaction(async (tx) => {
       const appt = await this.findAppointment(id, tenantId, tx);
       const settings = await this.findTenantSettings(tenantId, tx);
 

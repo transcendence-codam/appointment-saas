@@ -160,3 +160,23 @@ npm install <pkg> -w frontend                      # add a frontend dependency
 npm install <pkg> -w @appointment-saas/shared      # add dependency to shared (but this should not be neccessary)
 npm install -D <pkg>                               # add a DEV dependency
 ```
+
+### Frontend (`srcs/frontend`)
+
+#### Adding a shadcn component
+
+Run from `srcs/frontend` (where `components.json` lives):
+
+```bash
+cd srcs/frontend
+npx shadcn@latest add <component>   # for example npx shadcn@latest add dialog
+```
+
+- Components generated in `src/components/ui/` — import them with `@/components/ui/<component>`.
+- If it adds new dependencies, make sure no `package-lock.json` appeared in `srcs/frontend` (delete it, run `npm install` from root), then `make rebuild`.
+
+#### Where to put pages
+
+- Pages go in `src/pages/` (one component per file, e.g. `BookingPage.tsx`).
+- Shared wrappers (header, nav, `<Outlet />`) go in `src/layouts/`.
+- Register every new page as a route in `src/router.tsx`.
