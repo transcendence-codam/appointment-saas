@@ -7,7 +7,12 @@ import { ServicesModule } from './services/services.module.js';
 import { StaffModule } from './staff/staff.module.js';
 
 @Module({
-  imports: [AppointmentModule, ConfigModule.forRoot({ isGlobal: true }), ServicesModule, StaffModule],
+  imports: [
+    AppointmentModule,
+    ConfigModule.forRoot({ isGlobal: true }),
+    ServicesModule,
+    StaffModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
