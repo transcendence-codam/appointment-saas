@@ -55,6 +55,9 @@ model Membership {
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   user   User   @relation(fields: [userId], references: [id], onDelete: Restrict)
 
+  staff Staff?
+
+  @@unique([id, tenantId]) // lets Staff reference the (id, tenantId) pair
   @@unique([tenantId, userId])
   @@index([userId])
   @@map("memberships")
@@ -97,18 +100,27 @@ model Invite {
 }
 
 model Staff {
-  id           String  @id @default(dbgenerated("uuidv7()")) @db.Uuid
-  tenantId     String  @map("tenant_id") @db.Uuid
-  membershipId String  @map("membership_id") @db.Uuid
-  displayName  String  @map("display_name")
-  isActive     Boolean @default(true) @map("is_active")
+  id           String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  membershipId String?  @map("membership_id") @db.Uuid
+  displayName  String   @map("display_name")
+
+  jobTitle     String?  @map("job_title")
+  bio          String?
+  photoUrl     String?  @map("photo_url")
+  sortOrder    Int      @default(0) @map("sort_order")
+
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   services     StaffService[]
   appointments Appointment[]
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant       Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  membership   Membership? @relation(fields: [membershipId, tenantId], references: [id, tenantId], onDelete: NoAction)
 
   @@unique([id, tenantId])
+  @@unique([membershipId, tenantId])
   @@index([tenantId, isActive])
   @@map("staff")
 }
